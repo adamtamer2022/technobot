@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صفحة الإدارة</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            direction: rtl;
+            text-align: right;
+            margin: 0;
+            padding: 0;
+        }
+        
+        h1, h2 {
+            text-align: center;
+        }
+
+        .form-container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+
+        input, select {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            padding: 10px;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        #camera-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #camera {
+            width: 100%;
+            max-width: 640px;
+            border: 1px solid #ddd;
+            background: #000;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        #ranking-table, #points-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        #ranking-table th, #points-table th, #ranking-table td, #points-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        #ranking-table th, #points-table th {
+            background-color: #f2f2f2;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>صفحة الإدارة</h1>
+    
+    <div class="form-container">
+        <h2>إضافة نقاط للفريق</h2>
+        <form id="points-form" method="POST" action="/add_points">
+            <label for="team_name">اسم الفريق:</label>
+            <input type="text" name="team_name" required>
+            <label for="points">النقاط:</label>
+            <input type="number" name="points" required>
+            <button type="submit">إضافة النقاط</button>
+        </form>
+        <div id="points-message" class="message hidden"></div>
+    </div>
+
+    <div class="form-container">
+        <h2>إضافة مركز للفريق</h2>
+        <form id="rank-form">
+            <label for="team_name_rank">اسم الفريق:</label>
+            <input type="text" name="team_name" id="team_name_rank" required>
+            
+            <label for="rank">المركز:</label>
+            <select name="rank" id="rank" required>
+                <option value="1">أول</option>
+                <option value="2">ثاني</option>
+                <option value="3">ثالث</option>
+            </select>
+            
+            <button type="submit">إضافة المركز</button>
+        </form>
+        <div id="rank-message" class="message hidden"></div>
+    </div>
+
+    <div class="form-container">
+        <h2>عرض النقاط والمراكز</h2>
+        <table id="points-table">
+            <thead>
+                <tr>
+                    <th>اسم الفريق</th>
+                    <th>النقاط</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Content will be populated by JavaScript -->
+            </tbody>
+        </table>
+        
+        <table id="ranking-table">
+            <thead>
+                <tr>
+                    <th>الرتبة</th>
+                    <th>اسم الفريق</th>
+                    <th>المركز</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Content will be populated by JavaScript -->
+            </tbody>
+        </table>
+        
+    </div>
+
+    <div class="form-container">
+        <h2>مسح QR Code</h2>
+        <button id="start-camera">بدء الكاميرا</button>
+        <button id="stop-camera" class="hidden">إيقاف الكاميرا</button>
+        <div id="camera-container">
+            <video id="camera" autoplay></video>
+            <canvas id="canvas" width="640" height="480"></canvas>
+            <div id="attendance-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const pointsForm = document.getElementById('points-form');
+        const rankForm = document.getElementById('rank-form');
+        const pointsMessage = document.getElementById('points-message');
+        const rankMessage = document.getElementById('rank-message');
+
+        pointsForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(pointsForm);
+            const data = {
+                team_name: formData.get('team_name'),
+                points: parseInt(formData.get('points'), 10)
+            };
+
+            try {
+                const response = await fetch('/add_points', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(data)
+                });
+
+                if (response.ok) {
+                    pointsMessage.textContent = 'تم إضافة النقاط بنجاح!';
+                    pointsMessage.className = 'message success';
+                    pointsMessage.classList.remove('hidden');
+                    updateTables(); // Update tables after addition
+                } else {
+                    const error = await response.text();
+                    throw new Error(`فشل في إضافة النقاط. التفاصيل: ${error}`);
+                }
+            } catch (error) {
+                pointsMessage.textContent = `حدث خطأ: ${error.message}`;
+                pointsMessage.className = 'message error';
+                pointsMessage.classList.remove('hidden');
+            }
+        });
+
+        rankForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(rankForm);
+            const data = {
+                team_name: formData.get('team_name'),
+                rank: formData.get('rank')
+            };
+
+            try {
+                const response = await fetch('/add_rank', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    rankMessage.textContent = 'تم إضافة المركز بنجاح!';
+                    rankMessage.className = 'message success';
+                    rankMessage.classList.remove('hidden');
+                    updateTables(); // Update tables after addition
+                } else {
+                    throw new Error('فشل في إضافة المركز.');
+                }
+            } catch (error) {
+                rankMessage.textContent = `حدث خطأ: ${error.message}`;
+                rankMessage.className = 'message error';
+                rankMessage.classList.remove('hidden');
+            }
+        });
+
+        const startCameraButton = document.getElementById('start-camera');
+        const stopCameraButton = document.getElementById('stop-camera');
+        const video = document.getElementById('camera');
+        const canvas = document.getElementById('canvas');
+        const canvasContext = canvas.getContext('2d');
+        const resultText = document.getElementById('attendance-result');
+        
+        let stream = null;
+
+        startCameraButton.addEventListener('click', async () => {
+            startCameraButton.classList.add('hidden');
+            stopCameraButton.classList.remove('hidden');
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+
+                const scanQRCode = () => {
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imageData.data, canvas.width, canvas.height);
+                        
+                        if (code) {
+                            resultText.textContent = `تم قراءة QR code: ${code.data}`;
+                            fetch('/record_attendance', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ qrCode: code.data })
+                            }).then(response => response.json())
+                            .then(data => {
+                                resultText.textContent += ` - ${data.message}`;
+                            });
+                        } else {
+                            resultText.textContent = 'لا يوجد QR code.';
+                        }
+                    }
+                    requestAnimationFrame(scanQRCode);
+                };
+                
+                scanQRCode();
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                resultText.textContent = 'فشل في الوصول إلى الكاميرا.';
+            }
+        });
+
+        stopCameraButton.addEventListener('click', () => {
+            startCameraButton.classList.remove('hidden');
+            stopCameraButton.classList.add('hidden');
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            video.srcObject = null;
+        });
+
+        async function updateTables() {
+            try {
+                // Update points table
+                const pointsResponse = await fetch('/get_points');
+                if (!pointsResponse.ok) throw new Error('فشل في الحصول على النقاط');
+                const pointsData = await pointsResponse.json();
+        
+                const pointsTableBody = document.querySelector('#points-table tbody');
+                pointsTableBody.innerHTML = ''; // Clear existing rows
+                pointsData.forEach(point => {
+                    const row = pointsTableBody.insertRow();
+                    row.insertCell(0).textContent = point.team_name || 'غير متوفر';
+                    row.insertCell(1).textContent = point.points || 'غير متوفر';
+                });
+        
+                // Update ranking table
+                const rankingResponse = await fetch('/get_ranking');
+                if (!rankingResponse.ok) throw new Error('فشل في الحصول على المراكز');
+                const rankingData = await rankingResponse.json();
+        
+                const rankingTableBody = document.querySelector('#ranking-table tbody');
+                rankingTableBody.innerHTML = ''; // Clear existing rows
+                rankingData.forEach(rank => {
+                    const row = rankingTableBody.insertRow();
+                    row.insertCell(0).textContent = rank.rank || 'غير متوفر';
+                    row.insertCell(1).textContent = rank.team_name || 'غير متوفر';
+                    row.insertCell(2).textContent = rank.position || 'غير متوفر';
+                });
+            } catch (error) {
+                console.error('Error updating tables:', error);
+            }
+        }
+        
+        // Initialize tables on load
+        document.addEventListener('DOMContentLoaded', updateTables);
+    </script>
+</body>
+</html>

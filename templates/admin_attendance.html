@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صفحة الإدارة</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <style>
+        /* أضف أي تنسيق CSS خاص بك هنا */
+        #camera {
+            display: none;
+        }
+
+        #camera-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #attendance-result {
+            margin-top: 20px;
+        }
+
+        #ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        #ranking-table th, #ranking-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        #ranking-table th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>صفحة الإدارة</h1>
+    
+    <h2>تسجيل الحضور</h2>
+    <button id="start-camera">ابدأ الكاميرا</button>
+    <button id="stop-camera" class="hidden">أوقف الكاميرا</button>
+    <div id="camera-container">
+        <video id="camera" width="640" height="480" autoplay></video>
+        <canvas id="canvas" width="640" height="480"></canvas>
+    </div>
+    
+    <div id="attendance-result">
+        <h3>نتيجة التسجيل</h3>
+        <p id="result-text">لا يوجد تسجيل بعد.</p>
+    </div>
+
+    <div class="form-container">
+        <h2>إضافة نقاط للفريق</h2>
+        <form id="points-form" action="/add_points" method="POST">
+            <label for="team_name">اسم الفريق:</label>
+            <input type="text" name="team_name" id="team_name" required>
+            
+            <label for="points">النقاط:</label>
+            <input type="number" name="points" id="points" required>
+            
+            <button type="submit">إضافة النقاط</button>
+        </form>
+    </div>
+
+    <div class="form-container">
+        <h2>عرض المراكز</h2>
+        <table id="ranking-table">
+            <thead>
+                <tr>
+                    <th>الرتبة</th>
+                    <th>اسم الفريق</th>
+                    <th>النقاط</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- سيتم ملء هذا الجزء بواسطة JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // تسجيل الحضور عبر الكاميرا
+        const startCameraButton = document.getElementById('start-camera');
+        const stopCameraButton = document.getElementById('stop-camera');
+        const video = document.getElementById('camera');
+        const canvas = document.getElementById('canvas');
+        const canvasContext = canvas.getContext('2d');
+        const resultText = document.getElementById('result-text');
+        
+        let stream = null;
+
+        startCameraButton.addEventListener('click', async () => {
+            startCameraButton.classList.add('hidden');
+            stopCameraButton.classList.remove('hidden');
+
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            video.srcObject = stream;
+
+            const scanQRCode = () => {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, canvas.width, canvas.height);
+                    
+                    if (code) {
+                        resultText.textContent = `تم قراءة QR code: ${code.data}`;
+                        fetch('/record_attendance', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ qrCode: code.data })
+                        });
+                    } else {
+                        resultText.textContent = 'لا يوجد QR code.';
+                    }
+                }
+                requestAnimationFrame(scanQRCode);
+            };
+            
+            scanQRCode();
+        });
+
+        stopCameraButton.addEventListener('click', () => {
+            startCameraButton.classList.remove('hidden');
+            stopCameraButton.classList.add('hidden');
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            video.srcObject = null;
+        });
+
+        // تحديث مراكز الفرق
+        async function updateRanking() {
+            const response = await fetch('/get_ranking');
+            const data = await response.json();
+
+            const tbody = document.querySelector('#ranking-table tbody');
+            tbody.innerHTML = ''; // مسح المحتوى السابق
+
+            data.forEach((team, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${team.name}</td>
+                    <td>${team.points}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // استدعاء updateRanking عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', updateRanking);
+    </script>
+</body>
+</html>

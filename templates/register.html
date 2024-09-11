@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التسجيل</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            text-align: right;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"], input[type="number"], input[type="email"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>التسجيل في المسابقة</h1>
+    <form id="registration-form" action="/register" method="POST">
+        <label>اختر نوع التسجيل:</label>
+        <input type="radio" name="type" value="individual" id="individual" required> <label for="individual">فردي</label>
+        <input type="radio" name="type" value="academy" id="academy" required> <label for="academy">أكاديمي</label>
+        <input type="radio" name="type" value="university" id="university" required> <label for="university">جامعي</label>
+        
+        <div id="individual-fields" class="hidden">
+            <label for="team-name">اسم الفريق:</label>
+            <input type="text" name="team_name" id="team-name" required>
+            <label for="name">الاسم:</label>
+            <input type="text" name="name" id="name" required>
+            <label for="age">العمر:</label>
+            <input type="number" name="age" id="age" required>
+            <label for="phone">الهاتف:</label>
+            <input type="text" name="phone" id="phone" required>
+            <label for="email">البريد الإلكتروني:</label>
+            <input type="email" name="email" id="email" required>
+        </div>
+
+        <div id="academy-fields" class="hidden">
+            <label for="team-name-academy">اسم الفريق:</label>
+            <input type="text" name="team_name" id="team-name-academy" required>
+            <label for="academy-name">اسم الأكاديمية:</label>
+            <input type="text" name="academy-name" id="academy-name" required>
+            <label for="email-academy">البريد الإلكتروني:</label>
+            <input type="email" name="email" id="email-academy" required>
+        </div>
+
+        <div id="university-fields" class="hidden">
+            <label for="team-name-university">اسم الفريق:</label>
+            <input type="text" name="team_name" id="team-name-university" required>
+            <label for="university-name">اسم الجامعة:</label>
+            <input type="text" name="university-name" id="university-name" required>
+            <label for="email-university">البريد الإلكتروني:</label>
+            <input type="email" name="email" id="email-university" required>
+        </div>
+
+        <button type="submit">تسجيل</button>
+    </form>
+
+    <script>
+        document.querySelectorAll('input[name="type"]').forEach(input => {
+            input.addEventListener('change', function() {
+                const individualFields = document.getElementById('individual-fields');
+                const academyFields = document.getElementById('academy-fields');
+                const universityFields = document.getElementById('university-fields');
+
+                // Hide all sections
+                individualFields.classList.add('hidden');
+                academyFields.classList.add('hidden');
+                universityFields.classList.add('hidden');
+
+                // Show the selected section
+                if (this.value === 'individual') {
+                    individualFields.classList.remove('hidden');
+                } else if (this.value === 'academy') {
+                    academyFields.classList.remove('hidden');
+                } else if (this.value === 'university') {
+                    universityFields.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

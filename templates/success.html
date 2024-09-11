@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نجاح التسجيل</title>
+</head>
+<body>
+    <h1>نجاح التسجيل</h1>
+    <p>تم تسجيل فريقك بنجاح!</p>
+    
+    <h2>معلومات التسجيل</h2>
+    <p><strong>اسم المستخدم:</strong> {{ username }}</p>
+    <p><strong>كلمة المرور:</strong> {{ password }}</p>
+
+    <h2>QR Code</h2>
+    <img src="{{ url_for('static', filename='qr_codes/' + qr_code_filename) }}" alt="QR Code">
+    
+    <a href="{{ url_for('index') }}">العودة إلى الصفحة الرئيسية</a>
+</body>
+</html>

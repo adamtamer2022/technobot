@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مسابقة البرمجة</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            text-align: right;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav ul li {
+            display: inline;
+            margin-right: 10px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        nav ul li a:hover {
+            text-decoration: underline;
+        }
+
+        .welcome {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .welcome h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .welcome p {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/">الرئيسية</a></li>
+                <li><a href="/register">التسجيل</a></li>
+                <li><a href="/admin_login">إدارة</a></li>
+                <a href="{{ url_for('team_login') }}">تسجيل دخول الفريق</a>
+                <a href="{{ url_for('logout') }}">تسجيل خروج</a>
+
+            </ul>
+        </nav>
+    </header>
+
+    <section class="welcome">
+        <h1>مرحبًا بكم في مسابقة البرمجة</h1>
+        <p>تحديات البرمجة تنتظرك! شارك الآن عن طريق التسجيل في المسابقة.</p>
+        <a href="/register" class="btn">التسجيل الآن</a>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 مسابقة البرمجة. جميع الحقوق محفوظة.</p>
+    </footer>
+</body>
+</html>
